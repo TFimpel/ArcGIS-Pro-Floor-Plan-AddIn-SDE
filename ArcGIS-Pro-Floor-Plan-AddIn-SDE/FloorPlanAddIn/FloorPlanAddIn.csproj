@@ -130,6 +130,10 @@
   <ItemGroup>
     <AddInContent Include="DarkImages\GenericButtonPurple32.png" />
   </ItemGroup>
+  <ItemGroup>
+    <AddInContent Include="Images\q.png" />
+    <AddInContent Include="Images\s.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!--
   PackageAction can be:

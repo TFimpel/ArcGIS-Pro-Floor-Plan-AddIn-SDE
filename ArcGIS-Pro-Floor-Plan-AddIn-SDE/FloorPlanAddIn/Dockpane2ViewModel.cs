@@ -47,7 +47,7 @@ namespace FloorPlanAddIn
             {
                 Debug.WriteLine("ready - zoom!");
 
-                await QueuedTask.Run(() => { return ZoomToVisibleLayersAsync(MapView.Active); }); //for now switched to zoom to rooms.. this doesn't work anymore if it's a querylayer. need to select all features and then zoom to the selected features.
+                await QueuedTask.Run(() => { return ZoomToVisibleLayersAsync(MapView.Active); });
             }
             else
             {
@@ -64,7 +64,10 @@ namespace FloorPlanAddIn
 
             //Zoom to all visible layers in the map.
             var visibleLayers = mapView.Map.Layers.Where(l => l.Name.EndsWith("DETAILS"));
-            return await mapView.ZoomToAsync(visibleLayers); //could be improved. for now switched to zoom to rooms. if I get the objectids of all the lines fatures we can zoom to those instead.
+            Debug.WriteLine(visibleLayers.ToString());
+
+            Debug.WriteLine("ZoomToAsync");
+            return await mapView.ZoomToAsync(visibleLayers); 
         }
 
         /// <summary>

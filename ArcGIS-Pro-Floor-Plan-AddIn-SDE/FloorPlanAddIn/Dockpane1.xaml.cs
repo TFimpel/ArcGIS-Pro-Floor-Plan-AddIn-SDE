@@ -1,6 +1,7 @@
 ﻿using ArcGIS.Desktop.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -41,7 +42,17 @@ namespace FloorPlanAddIn
 
             // activate it
             pane.Activate();
-
         }
+
+        //public void btnEnableCreateLayoutButton(object sender, EventArgs e)
+        //{
+        //    CreateLayoutButton.IsEnabled = true;
+        //    Debug.WriteLine("btnEnableCreateLayoutButton");
+        //}
+
+        //public void btnDisableCreateLayoutButton(object sender, EventArgs e)
+        //{
+        //    CreateLayoutButton.IsEnabled = false;
+        //}
     }
 }

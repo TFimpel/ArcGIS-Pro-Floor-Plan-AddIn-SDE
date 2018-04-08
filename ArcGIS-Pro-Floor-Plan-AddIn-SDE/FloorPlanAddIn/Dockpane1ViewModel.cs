@@ -113,8 +113,6 @@ namespace FloorPlanAddIn
         public String SelectedSitesWhereClause
         {
             get {
-                if (BuildingChb)
-                {
                     if ((Sites.Where(o => o.IsSelected).Select(x => x.Site)).Count() > 1)
                     {
                         return "SITE in ('" + string.Join("','", (Sites.Where(o => o.IsSelected).Select(x => x.Site))) + "')";
@@ -127,32 +125,22 @@ namespace FloorPlanAddIn
                     {
                         return "SITE IS NOT NULL";
                     }
-                }
-                else
-                {
-                    return "SITE IS NOT NULL";
-                }
+
             }
         }
+
 
         public String SelectedBuildingsWhereClause
         {
             get
             {
-                if (FloorChb)
+                if ((Buildings.Where(o => o.IsSelected).Select(x => x.Building)).Count() > 1)
                 {
-                    if ((Buildings.Where(o => o.IsSelected).Select(x => x.Building)).Count() > 1)
-                    {
-                        return "BUILDING in ('" + string.Join("','", (Buildings.Where(o => o.IsSelected).Select(x => x.Building))) + "')";
-                    }
-                    if ((Buildings.Where(o => o.IsSelected).Select(x => x.Building)).Count() == 1)
-                    {
-                        return "BUILDING in ('" + string.Join("", (Buildings.Where(o => o.IsSelected).Select(x => x.Building))) + "')";
-                    }
-                    else
-                    {
-                        return "BUILDING IS NOT NULL";
-                    }
+                    return "BUILDING in ('" + string.Join("','", (Buildings.Where(o => o.IsSelected).Select(x => x.Building))) + "')";
+                }
+                if ((Buildings.Where(o => o.IsSelected).Select(x => x.Building)).Count() == 1)
+                {
+                    return "BUILDING in ('" + string.Join("", (Buildings.Where(o => o.IsSelected).Select(x => x.Building))) + "')";
                 }
                 else
                 {
@@ -165,8 +153,6 @@ namespace FloorPlanAddIn
         {
             get
             {
-                if (GroupIDChb)
-                {
                     if ((Floors.Where(o => o.IsSelected).Select(x => x.Floor)).Count() > 1)
                     {
                         return "FLOOR in ('" + string.Join("','", (Floors.Where(o => o.IsSelected).Select(x => x.Floor))) + "')";
@@ -179,11 +165,6 @@ namespace FloorPlanAddIn
                     {
                         return "FLOOR IS NOT NULL";
                     }
-                }
-                else
-                {
-                    return "FLOOR IS NOT NULL";
-                }
             }
         }
 
@@ -191,8 +172,6 @@ namespace FloorPlanAddIn
         {
             get
             {
-                if (1==1) //we always need this to create he maps
-                {
                     if ((GroupIDs.Where(o => o.IsSelected).Select(x => x.GroupID)).Count() > 1)
                     {
                         return "GROUP_ID in ('" + string.Join("','", (GroupIDs.Where(o => o.IsSelected).Select(x => x.GroupID))) + "')";
@@ -205,12 +184,6 @@ namespace FloorPlanAddIn
                     {
                         return "GROUP_ID IS NOT NULL";
                     }
-                }
-                //unreachable code in this case
-                //else
-                //{
-                //    return "GROUP_ID IS NOT NULL";
-                //}
             }
         }
 
@@ -334,19 +307,23 @@ namespace FloorPlanAddIn
             BindingOperations.EnableCollectionSynchronization(Buildings, _lockListOfBuildings); //needed to avoid multithreading related error because a different thread is used to modify the collection than was used to create the collection.
             await QueuedTask.Run(() =>
             {
-                //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
-                using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
-                {
-                    Debug.WriteLine(SelectedSitesWhereClause);
+            //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
+            using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
+            {
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "BUILDING, BLDG_DESC";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY BUILDING";
+                    if (BuildingChb == true) {
+                        queryDef.WhereClause = SelectedSitesWhereClause;
+                    }
+                    else{
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
 
-                    QueryDef queryDef = new QueryDef
-                    {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "BUILDING",
-                        WhereClause = SelectedSitesWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY BUILDING"
-                    };
+
 
                     Buildings.Clear();
 
@@ -360,6 +337,7 @@ namespace FloorPlanAddIn
                                 Buildings.Add(new BuildingData()
                                 {
                                     Building = Convert.ToString(row["BUILDING"]),
+                                    DisplayText = Convert.ToString(row["BUILDING"]) + " (" + Convert.ToString(row["BLDG_DESC"]) + ")",
                                     IsSelected = false
                                 });
                             }
@@ -381,14 +359,30 @@ namespace FloorPlanAddIn
                 {
                     Debug.WriteLine(SelectedSitesWhereClause);
 
-                    QueryDef queryDef = new QueryDef
+                    //QueryDef queryDef = new QueryDef
+                    //{
+                    //    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                    //    SubFields = "BUILDING",
+                    //    WhereClause = SelectedSitesWhereClause,
+                    //    PrefixClause = "DISTINCT",
+                    //    PostfixClause = "ORDER BY BUILDING"
+                    //};
+
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "BUILDING, BLDG_DESC";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY BUILDING";
+                    if (BuildingChb == true)
                     {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "BUILDING",
-                        WhereClause = SelectedSitesWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY BUILDING"
-                    };
+                        queryDef.WhereClause = SelectedSitesWhereClause;
+                    }
+                    else
+                    {
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
+
 
                     Buildings.Clear();
 
@@ -402,6 +396,7 @@ namespace FloorPlanAddIn
                                 Buildings.Add(new BuildingData()
                                 {
                                     Building = Convert.ToString(row["BUILDING"]),
+                                    DisplayText = Convert.ToString(row["BUILDING"]) + " ("+Convert.ToString(row["BLDG_DESC"]) + ")",
                                     IsSelected = true
                                 });
                             }
@@ -423,14 +418,29 @@ namespace FloorPlanAddIn
                 //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
                 using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
                 {
-                    QueryDef queryDef = new QueryDef
+                    //QueryDef queryDef = new QueryDef
+                    //{
+                    //    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                    //    SubFields = "FLOOR",
+                    //    WhereClause = SelectedBuildingsWhereClause,
+                    //    PrefixClause = "DISTINCT",
+                    //    PostfixClause = "ORDER BY FLOOR"
+                    //};
+
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "FLOOR";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY FLOOR";
+                    if (FloorChb == true)
                     {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "FLOOR",
-                        WhereClause = SelectedBuildingsWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY FLOOR"
-                    };
+                        queryDef.WhereClause = SelectedBuildingsWhereClause + " AND " + SelectedSitesWhereClause;
+                    }
+                    else
+                    {
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
 
                     Floors.Clear();
 
@@ -463,14 +473,28 @@ namespace FloorPlanAddIn
                 //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
                 using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
                 {
-                    QueryDef queryDef = new QueryDef
+                    //QueryDef queryDef = new QueryDef
+                    //{
+                    //    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                    //    SubFields = "FLOOR",
+                    //    WhereClause = SelectedBuildingsWhereClause,
+                    //    PrefixClause = "DISTINCT",
+                    //    PostfixClause = "ORDER BY FLOOR"
+                    //};
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "FLOOR";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY FLOOR";
+                    if (FloorChb == true)
                     {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "FLOOR",
-                        WhereClause = SelectedBuildingsWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY FLOOR"
-                    };
+                        queryDef.WhereClause = SelectedBuildingsWhereClause + " AND " + SelectedSitesWhereClause;
+                    }
+                    else
+                    {
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
 
                     Floors.Clear();
 
@@ -504,14 +528,29 @@ namespace FloorPlanAddIn
                 //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
                 using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
                 {
-                    QueryDef queryDef = new QueryDef
+                    //QueryDef queryDef = new QueryDef
+                    //{
+                    //    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                    //    SubFields = "GROUP_ID",
+                    //    WhereClause = SelectedFloorsWhereClause,
+                    //    PrefixClause = "DISTINCT",
+                    //    PostfixClause = "ORDER BY GROUP_ID"
+                    //};
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "GROUP_ID, GROUP_DESC";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY GROUP_ID";
+                    if (GroupIDChb == true)
                     {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "GROUP_ID",
-                        WhereClause = SelectedFloorsWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY GROUP_ID"
-                    };
+                        queryDef.WhereClause = SelectedBuildingsWhereClause + " AND " + SelectedSitesWhereClause + " AND " + SelectedFloorsWhereClause;
+
+                    }
+                    else
+                    {
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
 
                     GroupIDs.Clear();
 
@@ -525,6 +564,7 @@ namespace FloorPlanAddIn
                                 GroupIDs.Add(new GroupIDData()
                                 {
                                     GroupID = Convert.ToString(row["GROUP_ID"]),
+                                    DisplayText = Convert.ToString(row["GROUP_DESC"]),
                                     IsSelected = false
                                 });
                             }
@@ -544,14 +584,30 @@ namespace FloorPlanAddIn
                 //using (Geodatabase geodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\UMN_BLDG_ROOM.gdb"))))
                 using (Geodatabase geodatabase = new Geodatabase(new DatabaseConnectionFile(new Uri("C:\\ArcGIS Pro Floor Plan Tools Add-In\\EFLOORPLAN TO TEST.sde"))))
                 {
-                    QueryDef queryDef = new QueryDef
+                    //QueryDef queryDef = new QueryDef
+                    //{
+                    //    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                    //    SubFields = "GROUP_ID",
+                    //    WhereClause = SelectedFloorsWhereClause,
+                    //    PrefixClause = "DISTINCT",
+                    //    PostfixClause = "ORDER BY GROUP_ID"
+                    //};
+                    QueryDef queryDef = new QueryDef();
+                    queryDef.Tables = "EFLOORPLAN.UMN_BLDG_ROOM";
+                    queryDef.SubFields = "GROUP_ID, GROUP_DESC";
+                    queryDef.PrefixClause = "DISTINCT";
+                    queryDef.PostfixClause = "ORDER BY GROUP_ID";
+                    if (GroupIDChb == true)
                     {
-                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                        SubFields = "GROUP_ID",
-                        WhereClause = SelectedFloorsWhereClause,
-                        PrefixClause = "DISTINCT",
-                        PostfixClause = "ORDER BY GROUP_ID"
-                    };
+                        queryDef.WhereClause = SelectedBuildingsWhereClause + " AND " + SelectedSitesWhereClause + " AND " + SelectedFloorsWhereClause;
+                    }
+                    else
+                    {
+                        queryDef.WhereClause = "";
+                    }
+                    Debug.WriteLine(queryDef.WhereClause);
+
+
 
                     GroupIDs.Clear();
 
@@ -565,6 +621,7 @@ namespace FloorPlanAddIn
                                 GroupIDs.Add(new GroupIDData()
                                 {
                                     GroupID = Convert.ToString(row["GROUP_ID"]),
+                                    DisplayText = Convert.ToString(row["GROUP_DESC"]),
                                     IsSelected = true
                                 });
                             }
@@ -591,35 +648,49 @@ namespace FloorPlanAddIn
 
                     Debug.WriteLine(combinedWhereClause);
 
-                QueryDef queryDef = new QueryDef
-                {
-                    Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
-                    SubFields = "SITE, BUILDING, FLOOR",
-                    WhereClause = combinedWhereClause,
-                    PrefixClause = "DISTINCT",
-                    PostfixClause = "ORDER BY SITE, BUILDING, FLOOR"
-                };
-                using (RowCursor rowCursor = geodatabase.Evaluate(queryDef, false))
-                {
-                        uniqueSiteBuildingFloors.Clear();
-                    while (rowCursor.MoveNext())
+                    QueryDef queryDef = new QueryDef
                     {
-                        using (Row row = rowCursor.Current)
+                        Tables = "EFLOORPLAN.UMN_BLDG_ROOM",
+                        SubFields = "SITE, BUILDING, FLOOR",
+                        WhereClause = combinedWhereClause,
+                        PrefixClause = "DISTINCT",
+                        PostfixClause = "ORDER BY SITE, BUILDING, FLOOR"
+                    };
+                    using (RowCursor rowCursor = geodatabase.Evaluate(queryDef, false))
+                    {
+                        uniqueSiteBuildingFloors.Clear();
+                        while (rowCursor.MoveNext())
                         {
-                            Feature feature = row as Feature;
+                            using (Row row = rowCursor.Current)
+                            {
+                                Feature feature = row as Feature;
                                 var site = Convert.ToString(row["SITE"]);
                                 var building = Convert.ToString(row["BUILDING"]);
                                 var floor = Convert.ToString(row["FLOOR"]);
                                 uniqueSiteBuildingFloors.Add(site + building + floor);
+                            }
                         }
                     }
-                }
-                Debug.WriteLine(String.Join(", ", uniqueSiteBuildingFloors.ToArray()) );
+                    Debug.WriteLine(String.Join(", ", uniqueSiteBuildingFloors.ToArray()));
                 }
 
             });
 
-            MessageBox.Show("Using your currently selected filter options, the query will return " + uniqueSiteBuildingFloors.Count().ToString() + " unique floors. The Create Layout button will create a page layout for each floor." + Environment.NewLine + Environment.NewLine + "Click OK to close this dialog. Then either modify your filter selections and re-validate the query or proceed by clicking the Create Layout button.", "Query Validation Results");
+            //MessageBox.Show("Using your currently selected filter options, the query will return " + uniqueSiteBuildingFloors.Count().ToString() + " unique floors. The Create Layout button will create a page layout for each floor." + Environment.NewLine + Environment.NewLine + "Click OK to close this dialog. Then either modify your filter selections and re-validate the query or proceed by clicking the Create Layout button.", "Query Validation Results");
+
+            string messagetitle = "Confirm Query Validation Results";
+            string messagetext = "Based on the selected filter options ArcGIS Pro will create " + uniqueSiteBuildingFloors.Count().ToString() + " floor plan maps and layouts." + Environment.NewLine + Environment.NewLine + "Click Ok to proceed.";
+
+            var messageresult = ArcGIS.Desktop.Framework.Dialogs.MessageBox.Show(messagetext, messagetitle, MessageBoxButton.OKCancel, MessageBoxImage.Information);
+
+            Debug.WriteLine(messageresult);
+
+            if (uniqueSiteBuildingFloors.Count() > 0) { 
+            if (messageresult.ToString() == "OK")
+            {
+                CmdCreateMapsLiveData.Execute(true);
+            }
+            }
 
         }, true));
 
@@ -844,9 +915,12 @@ namespace FloorPlanAddIn
         public bool IsSelected { get; set; }
 
     }
+
+    //here we coudl add a displaytext etc.
     internal class BuildingData
     {
         public string Building { get; set; }
+        public string DisplayText { get; set; }
         public bool IsSelected { get; set; }
     }
     internal class FloorData
@@ -857,6 +931,7 @@ namespace FloorPlanAddIn
     internal class GroupIDData
     {
         public string GroupID { get; set; }
+        public string DisplayText { get; set; }
         public bool IsSelected { get; set; }
     }
 
